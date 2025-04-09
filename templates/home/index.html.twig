@@ -1,0 +1,26 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Home{% endblock %}
+
+{% block body %}
+    <div class="container">
+        <h1>Products</h1>
+        <div class="row">
+            {% for product in products %}
+            <div class="card" style="width: 18rem;">
+                <img src="https://dummyimage.com/200x150" class="card-img-top" alt="{{ product.name }}">
+                <div class="card-body">
+                    <h5 class="card-title">{{ product.name }}</h5>
+                    <p class="card-text">{{ product.description }}</p>
+                </div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item">€ {{ product.price }}</li>
+                </ul>
+                <div class="card-body">
+                    <a href="{{ path('app_product_add', {id : product.id}) }}" class="btn btn-primary">Buy</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}
