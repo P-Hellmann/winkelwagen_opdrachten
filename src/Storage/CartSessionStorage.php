@@ -47,5 +47,67 @@ class CartSessionStorage
         }
     }
 
-    
+    /**
+     * Remove item from shoppingcart.
+     *
+     * @return void
+     */
+    public function removeProductFromCart(int $product_id):void
+    {
+        if ($this->shoppingCart!=null) {
+            foreach ($this->shoppingCart as $key=>$orderLine) {
+                if ($orderLine->getProduct()->getId() == $product_id) {
+                    unset($this->shoppingCart[$key]);
+                }
+            }
+        }
+        $this->serializeShoppingCart();
+    }
+
+    /**
+     * Add Product in shoppingcart in session
+     *
+     * @return void
+     */
+    public function addProductToCart(int $product_id):void
+    {
+        $exist = false;
+        // Search for orderline with product_id => inc quantity
+        if ($this->shoppingCart!=null) {
+            foreach ($this->shoppingCart as $orderLine) {
+                if ($orderLine->getProduct()->getId() == $product_id) {
+                    $orderLine->setQuantity($orderLine->getQuantity() + 1);
+                    $exist = true;
+                }
+            }
+        }
+        if (!$exist) {
+            $newOrderLine = new OrderLine();
+            $newOrderLine->setQuantity(1);
+            $newOrderLine->setProduct($this->productRepository->find($product_id));
+            $this->shoppingCart[] = $newOrderLine;
+        }
+        $this->serializeShoppingCart();
+    }
+
+    /**
+     * Get amount of products in shoppingcart.
+     *
+     * @return void
+     */
+    public function GetNumberOfProductInCart()
+    {
+        
+    }
+
+    private function serializeShoppingCart():void
+    {
+        $cart = [];
+        if ($this->shoppingCart!=null) {
+            foreach ($this->shoppingCart as $orderLine) {
+                $cart[] = serialize($orderLine);
+            }
+        }
+        $this->session->set('cart', $cart);
+    }
 }
