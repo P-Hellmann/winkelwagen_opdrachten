@@ -31,7 +31,7 @@ class OrderType extends AbstractType
                 'label' => 'City',
             ])
             ->add('submit', SubmitType::class, [
-                'label' => 'Order',
+                'label' => 'Checkout',
             ])
         ;
     }

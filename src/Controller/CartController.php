@@ -3,8 +3,10 @@
 namespace App\Controller;
 
 use App\Entity\Order;
+use App\Entity\OrderLine;
 use App\Form\OrderType;
 use App\Storage\CartSessionStorage;
+use Doctrine\ORM\EntityManagerInterface;
 use http\Header;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -14,7 +16,7 @@ use Symfony\Component\Routing\Attribute\Route;
 final class CartController extends AbstractController
 {
     #[Route('/cart', name: 'app_cart')]
-    public function index(CartSessionStorage $cartSessionStorage, Request $request): Response
+    public function index(CartSessionStorage $cartSessionStorage, Request $request, EntityManagerInterface $entityManager): Response
     {
         $shoppingCart = $cartSessionStorage->getShoppingCart();
 
@@ -23,11 +25,19 @@ final class CartController extends AbstractController
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
             $order = $form->getData();
-            // purchases koppelen aan order
+            foreach ($shoppingCart as $orderLine) {
+                $order->addOrderLine($orderLine);
+                $entityManager->persist($orderLine);
+            }
+            $entityManager->persist($order);
+            $entityManager->flush();
+            $this->addFlash("success", "Order successfully placed!");
+            return $this->redirectToRoute('app_home');
         }
 
         return $this->render('cart/index.html.twig', [
             'shoppingCart' => $shoppingCart,
+            'form' => $form,
             'amount' => $cartSessionStorage->getNumberOfProductsInCart(),
             'totalPrice' => $cartSessionStorage->getTotalPrice(),
         ]);
