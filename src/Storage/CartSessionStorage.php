@@ -5,7 +5,6 @@ namespace App\Storage;
 use App\Entity\OrderLine;
 use App\Repository\ProductRepository;
 use Symfony\Component\HttpFoundation\RequestStack;
-use Symfony\Component\HttpFoundation\Session\SessionInterface;
 
 /**
  * Class CartSessionStorage
@@ -13,101 +12,113 @@ use Symfony\Component\HttpFoundation\Session\SessionInterface;
  */
 class CartSessionStorage
 {
-    /**
-     * CartSessionStorage constructor.
-     *
-     * @return void
-     * @var OrderLine[] $ShoppingCart
-     */
-    private $productRepository;
+    private ProductRepository $productRepository;
     private $session;
-    private $shoppingCart;
+    /** @var OrderLine[] */
+    private array $shoppingCart = [];
 
     public function __construct(RequestStack $requestStack, ProductRepository $productRepository)
     {
         $this->session = $requestStack->getSession();
         $this->productRepository = $productRepository;
         $this->deserializeShoppingCart();
-//    addProductToCart(int product_id)
-//    removeProductFromCart(int product_id)
-//    getShoppingCart()
-//    getNumberOfProductsInCart()
-//    getTotalPrice()
-//    clearShoppingCart()
     }
 
-    private function deserializeShoppingCart():void
+    private function deserializeShoppingCart(): void
     {
-        $this->shoppingCart = $this->session->get('cart');
-        if ($this->shoppingCart!=null) {
-            foreach ($this->shoppingCart as $orderLine) {
-                $orderLine = unserialize($orderLine);
-                $orderLine->setProduct($this->productRepository->find($orderLine->getProduct()->getId()));
-            }
+        $cartData = $this->session->get('cart', []);
+        $this->shoppingCart = [];
+
+        foreach ($cartData as $serializedOrderLine) {
+            /** @var OrderLine $orderLine */
+            $orderLine = unserialize($serializedOrderLine);
+            $orderLine->setProduct($this->productRepository->find($orderLine->getProduct()->getId()));
+            $this->shoppingCart[] = $orderLine;
         }
     }
 
-    /**
-     * Remove item from shoppingcart.
-     *
-     * @return void
-     */
-    public function removeProductFromCart(int $product_id):void
-    {
-        if ($this->shoppingCart!=null) {
-            foreach ($this->shoppingCart as $key=>$orderLine) {
-                if ($orderLine->getProduct()->getId() == $product_id) {
-                    unset($this->shoppingCart[$key]);
-                }
-            }
-        }
-        $this->serializeShoppingCart();
-    }
-
-    /**
-     * Add Product in shoppingcart in session
-     *
-     * @return void
-     */
-    public function addProductToCart(int $product_id):void
-    {
-        $exist = false;
-        // Search for orderline with product_id => inc quantity
-        if ($this->shoppingCart!=null) {
-            foreach ($this->shoppingCart as $orderLine) {
-                if ($orderLine->getProduct()->getId() == $product_id) {
-                    $orderLine->setQuantity($orderLine->getQuantity() + 1);
-                    $exist = true;
-                }
-            }
-        }
-        if (!$exist) {
-            $newOrderLine = new OrderLine();
-            $newOrderLine->setQuantity(1);
-            $newOrderLine->setProduct($this->productRepository->find($product_id));
-            $this->shoppingCart[] = $newOrderLine;
-        }
-        $this->serializeShoppingCart();
-    }
-
-    /**
-     * Get amount of products in shoppingcart.
-     *
-     * @return void
-     */
-    public function GetNumberOfProductInCart()
-    {
-        
-    }
-
-    private function serializeShoppingCart():void
+    private function serializeShoppingCart(): void
     {
         $cart = [];
-        if ($this->shoppingCart!=null) {
-            foreach ($this->shoppingCart as $orderLine) {
-                $cart[] = serialize($orderLine);
+
+        foreach ($this->shoppingCart as $orderLine) {
+            $cart[] = serialize($orderLine);
+        }
+
+        $this->session->set('cart', $cart);
+    }
+
+    public function addProductToCart(int $productId): void
+    {
+        $found = false;
+
+        foreach ($this->shoppingCart as $orderLine) {
+            if ($orderLine->getProduct()->getId() === $productId) {
+                $orderLine->setQuantity($orderLine->getQuantity() + 1);
+                $found = true;
+                break;
             }
         }
-        $this->session->set('cart', $cart);
+
+        if (!$found) {
+            $product = $this->productRepository->find($productId);
+            if ($product !== null) {
+                $newOrderLine = new OrderLine();
+                $newOrderLine->setQuantity(1);
+                $newOrderLine->setProduct($product);
+                $this->shoppingCart[] = $newOrderLine;
+            }
+        }
+
+        $this->serializeShoppingCart();
+    }
+
+    public function removeProductFromCart(int $productId): void
+    {
+        foreach ($this->shoppingCart as $key => $orderLine) {
+            if ($orderLine->getProduct()->getId() === $productId) {
+                unset($this->shoppingCart[$key]);
+            }
+        }
+
+        // Reindex array after unset
+        $this->shoppingCart = array_values($this->shoppingCart);
+        $this->serializeShoppingCart();
+    }
+
+    public function getNumberOfProductsInCart(): int
+    {
+        $total = 0;
+
+        foreach ($this->shoppingCart as $orderLine) {
+            $total += $orderLine->getQuantity();
+        }
+
+        return $total;
+    }
+
+    /**
+     * @return OrderLine[]
+     */
+    public function getShoppingCart(): array
+    {
+        return $this->shoppingCart;
+    }
+
+    public function getTotalPrice(): float
+    {
+        $total = 0.0;
+
+        foreach ($this->shoppingCart as $orderLine) {
+            $total += $orderLine->getQuantity() * $orderLine->getProduct()->getPrice();
+        }
+
+        return $total;
+    }
+
+    public function clearShoppingCart(): void
+    {
+        $this->shoppingCart = [];
+        $this->serializeShoppingCart();
     }
 }

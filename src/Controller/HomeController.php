@@ -15,7 +15,7 @@ final class HomeController extends AbstractController
     {
         return $this->render('home/index.html.twig', [
             'products' => $productRepository->findAll(),
-            'amount' => $cartSessionStorage->GetNumberOfProductInCart(),
+            'amount' => $cartSessionStorage->GetNumberOfProductsInCart(),
         ]);
     }
 
