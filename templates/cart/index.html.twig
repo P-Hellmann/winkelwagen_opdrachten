@@ -36,7 +36,8 @@
                                 <b>€ {{ item.product.price }}</b>
                             </div>
                             <div class="flex-fill">
-                                <a href="{{ path('app_remove_cart_product',{id:item.product.id}) }}" class="btn btn-sm btn-danger text-white">Clear</a>
+                                <a href="{{ path('app_remove_cart_product',{id:item.product.id}) }}" class="btn btn-sm btn-danger text-white">-</a>
+                                <a href="{{ path('app_product_add',{id:item.product.id}) }}" class="btn btn-sm btn-success text-white">+</a>
                             </div>
                         </li>
                     {% endfor %}

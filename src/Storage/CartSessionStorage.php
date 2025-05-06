@@ -77,7 +77,11 @@ class CartSessionStorage
     {
         foreach ($this->shoppingCart as $key => $orderLine) {
             if ($orderLine->getProduct()->getId() === $productId) {
-                unset($this->shoppingCart[$key]);
+                $product = $orderLine->getProduct();
+                $orderLine->setQuantity($orderLine->getQuantity() - 1);
+                if ($orderLine->getQuantity() === 0) {
+                    unset($this->shoppingCart[$key]);
+                }
             }
         }
 
