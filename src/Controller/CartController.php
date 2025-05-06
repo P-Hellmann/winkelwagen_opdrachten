@@ -56,11 +56,11 @@ final class CartController extends AbstractController
         $cartSessionStorage->removeProductFromCart($id);
         return $this->redirectToRoute('app_cart');
     }
-    #[Route('/cart/add/{id}', name: 'app_pr_add')]
+    #[Route('/cart/add/{id}', name: 'app_cart_add')]
     public function add(CartSessionStorage $cartSessionStorage, int $id): Response
     {
         $cartSessionStorage->addProductToCart($id);
-        return $this->redirectToRoute('app_home', [
+        return $this->redirectToRoute('app_cart', [
 
         ]);
     }
